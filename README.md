@@ -1,44 +1,139 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app), using the [Redux](https://redux.js.org/) and [Redux Toolkit](https://redux-toolkit.js.org/) template.
+# Streamshare
+Streamshare aspires to be [Sync Tube](https://sync-tube.de/) but for Torrents.
 
-## Available Scripts
+## Why?
+Sync-Tube is great, but it is limited to YouTube only. Torrents are a rich source of media, a lot of which isn't accessible from YouTube. Furthermore, sharing local files is generally difficult due to the need to upload them to a central server to later push down to other views. This issue is side-stepped through the use of peer-to-peer technology, specifically WebTorrent. 
 
-In the project directory, you can run:
+## How?
+If we're going to go peer-to-peer, we may as well go all in. The idea is to eventually settle on a pure peer-to-peer implementation where the commands are dispatched via TURN servers. This will require either a consensus protocol, identity cryptography or the assumption of everyone being good internet citizens.
 
-### `npm start`
+For now however, the communication will be forwarded through a central socket.io server.
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+# Protocol
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+While the exact specification is yet to be settled on, here as some commands which will be used as a working draft.
 
-### `npm test`
+## Input
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+This is the data that clients send to the sychronization server. It will usually be passed through as-is, with the addition of a meta object.
 
-### `npm run build`
+### Join
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```js
+{
+    command: "Join",
+    name: "<string>",
+    roomId: "<string>"
+}
+```
+### Hello
+```js
+{
+    command: "HELLO",
+    users: {
+        [
+            {
+                id: "<number>",
+                name: "<string>"
+            },
+            {
+                id: "<number>",
+                name: "<string>"
+            }
+        ]
+    },
+    status: {
+        currentTime: "<number>",
+        state: "PLAYING" | "PAUSED"
+    },
+    playlist: 
+        [
+            {
+                filename: "<string>",
+                torrentId: "<string>"
+            }
+        ],
+    dispatchedAt: "<number>"
+}
+```
+### Pause:
+```js
+{
+    command: "PAUSE",
+    currentTime: "<number>",
+    dispatchedAt: "<number>"
+}
+```
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+### Play/Pause:
+```js
+{
+    command: "PLAY" | "PAUSE",
+    currentTime: "<number>",
+    dispatchedAt: "<number>"
+}
+```
+### Sync
+```js
+{
+    command: "SYNC",
+    currentTime: "<number>",
+    buffer: "<number>",
+    dispatchedAt: "<number>"
+}
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+##  Output
+### Play/Pause:
+```js
+{
+    command: "PLAY" | "PAUSE",
+    userId: "<number>",
+    currentTime: "<number>",
+    dispatchedAt: "<number>"
+}
+```
+### Hello
 
-### `npm run eject`
+Message sent to new connections and reconnections:
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+```js
+{
+    command: "HELLO",
+    users: {
+        [
+            {
+                id: "<number>",
+                name: "<string>"
+            },
+            {
+                id: "<number>",
+                name: "<string>"
+            }
+        ]
+    },
+    status: {
+        currentTime: "<number>",
+        state: "PLAYING" | "PAUSED"
+    },
+    playlist: 
+        [
+            {
+                filename: "<string>",
+                torrentId: "<string>"
+            }
+        ],
+    dispatchedAt: "<number>"
+}
+```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Sync
+```js
+{
+    command: "SYNC",
+    userId: "<number>",
+    currentTime: "<number>",
+    buffer: "<number>",
+    dispatchedAt: "<number>"
+}
+```
